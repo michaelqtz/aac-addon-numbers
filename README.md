@@ -5,6 +5,9 @@ Did you just lose a raid vs. raid engagement? Are you trying to decide between b
 
 **Please note, this is a work in progress addon and will be actively expanded. Leave feedback here or in my DMs and I'll incorporate it the best I can!**
 
+<img width="693" height="359" alt="image" src="https://github.com/user-attachments/assets/d3d2baef-64df-44ec-b2f7-6772b1d200a4" />
+
+
 ## Features
 - Meter that keeps track of different player counts:
   - How many players from a certain guild
