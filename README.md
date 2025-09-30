@@ -13,7 +13,7 @@ Did you just lose a raid vs. raid engagement? Are you trying to decide between b
   - How many players from a certain guild
   - Players' unique names
 - Currently supported display types:
-  - <Guild>
+  - \<Guild\>
 ## Coming Soon
 - Drop players after X amount of time
   - Configurable in settings
