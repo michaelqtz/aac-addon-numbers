@@ -3,7 +3,7 @@ local api = require("api")
 local numbers_addon = {
 	name = "Numbers",
 	author = "Michaelqt",
-	version = "1.0.0",
+	version = "1.0.1",
 	desc = "Numbers diff or skill diff? (It's numbers)"
 }
 
@@ -98,8 +98,7 @@ local function getNumbersList(category, leftList, rightList)
 
             if guild == nil or guild == "" and faction == "friendly" then 
                 guild = "FRIENDLY (No Guild)"
-            elseif guild == nil or guild == "" and faction == "hostile" then 
-                guild = "HOSTILE (No Guild)"
+                guildFactions[guild] = "friendly"
             end 
 
             if guildCounts[guild] == nil then 
@@ -112,7 +111,7 @@ local function getNumbersList(category, leftList, rightList)
         for _, guild in pairs(sortedGuilds) do 
             local count = guildCounts[guild]
             local listEntry = {}
-            if guild == "FRIENDLY (No Guild)" or guild == "HOSTILE (No Guild)" then 
+            if guild == "FRIENDLY (No Guild)" then 
                 listEntry.text = tostring(count) .. " Guildless"
             else 
                 listEntry.text = tostring(count) .. " <"..guild..">"
@@ -120,7 +119,7 @@ local function getNumbersList(category, leftList, rightList)
 
             if guildFactions[guild] == "friendly" then 
                 table.insert(numbersListTable["left"], listEntry)
-            else 
+            else
                 table.insert(numbersListTable["right"], listEntry)
             end
         end
