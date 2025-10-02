@@ -14,13 +14,12 @@ Did you just lose a raid vs. raid engagement? Are you trying to decide between b
   - Players' unique names
 - Currently supported display types:
   - \<Guild\>
-## Coming Soon
-- Drop players after X amount of time
-  - Configurable in settings
-- Categories of meter type:
   - Kills
   - Deaths
   - K/D Ratio
+## Coming Soon
+- Drop players after X amount of time
+  - Configurable in settings
 - Different display types:
   - Individual Player
   - "Alliances"
