@@ -3,7 +3,7 @@ local api = require("api")
 local numbers_addon = {
 	name = "Numbers",
 	author = "Michaelqt",
-	version = "1.0.2",
+	version = "1.0.3",
 	desc = "Numbers diff or skill diff? (It's numbers)"
 }
 
@@ -70,7 +70,9 @@ local function processUnitDeath(stringId, lostExpStr, durabilityLossRatio)
     if stringId == nil then return end
     local unitInfo = api.Unit:GetUnitInfoById(stringId)
     if unitInfo.type == "character" then 
-        api.Log:Info("[Numbers] "..unitInfo.name.." killed by "..tostring(lastDamageSource[unitInfo.name]))
+        if lastDamageSource[unitInfo.name] ~= nil then 
+            api.Log:Info("[Numbers] "..unitInfo.name.." killed by "..tostring(lastDamageSource[unitInfo.name]))
+        end 
         kills[lastDamageSource[unitInfo.name]] = (kills[lastDamageSource[unitInfo.name]] or 0) + 1
         deaths[unitInfo.name] = (deaths[unitInfo.name] or 0) + 1
         kdRatios[unitInfo.name] = (kills[unitInfo.name] or 0) / (deaths[unitInfo.name] or 1)
@@ -481,7 +483,7 @@ local function OnLoad()
     function numbersWindow.categoryButton:SelectedProc()
         currentCategory = numbersWindow.categoryButton:GetSelectedIndex()
         refreshUi()
-        api.Log:Info("[Numbers] Category changed to "..tostring(categoryStrings[currentCategory]))
+        -- api.Log:Info("[Numbers] Category changed to "..tostring(categoryStrings[currentCategory]))
     end
 
 
