@@ -3,7 +3,7 @@ local api = require("api")
 local numbers_addon = {
 	name = "Numbers",
 	author = "Michaelqt",
-	version = "1.0.1",
+	version = "1.0.2",
 	desc = "Numbers diff or skill diff? (It's numbers)"
 }
 
@@ -16,18 +16,29 @@ local categories = {
     "K/D Ratio",
 }
 local currentCategory = 1
+local categoryStrings = {
+    "Numbers",
+    "Kills",
+    "Deaths",
+    "K/D Ratio",
+}
 local clockTimer = 2990
 local CLOCK_RESET_TIMER = 3000
+
 
 local isLoaded = false
 
 local currentUiTime
+local fadeNameRate
 local names
-local factions
 local guilds
+local factions
 local guildFactions
 local kills 
 local deaths
+local kdRatios
+
+local lastDamageSource
 
 local function getKeysSortedByValue(tbl, sortFunction)
     local keys = {}
@@ -55,12 +66,31 @@ local function addUnitToInfoTables(unitInfo)
     factions[name] = unitInfo.faction 
 end 
 
-local function processCombatMessage(targetUnitId, combatEvent, source, target, ...)
+local function processUnitDeath(stringId, lostExpStr, durabilityLossRatio)
+    if stringId == nil then return end
+    local unitInfo = api.Unit:GetUnitInfoById(stringId)
+    if unitInfo.type == "character" then 
+        api.Log:Info("[Numbers] "..unitInfo.name.." killed by "..tostring(lastDamageSource[unitInfo.name]))
+        kills[lastDamageSource[unitInfo.name]] = (kills[lastDamageSource[unitInfo.name]] or 0) + 1
+        deaths[unitInfo.name] = (deaths[unitInfo.name] or 0) + 1
+        kdRatios[unitInfo.name] = (kills[unitInfo.name] or 0) / (deaths[unitInfo.name] or 1)
+    end 
+end 
 
-    -- api.Log:Info("Combat Message: "..combatEvent)
-    -- for i = 1, #arg do 
-    --     api.Log:Info("Arg "..i..": "..tostring(arg[i]))
-    -- end 
+local function processCombatMessage(targetUnitId, combatEvent, source, target, ...)
+    if targetUnitId ~= nil then 
+        local targetUnitInfo = api.Unit:GetUnitInfoById(targetUnitId)
+        addUnitToInfoTables(targetUnitInfo)
+
+        if combatEvent == "SPELL_DAMAGE" or combatEvent == "SPELL_DOT_DAMAGE" or combatEvent == "MELEE_DAMAGE" then 
+            if factions[source] == "friendly" or factions[source] == "hostile" then 
+                local result = ParseCombatMessage(combatEvent, unpack(arg))
+                lastDamageSource[targetUnitInfo.name] = source
+            end 
+        end 
+
+    end
+    
 end
 
 local function processCombatText(sourceUnitId, targetUnitId, amount, skillType, hitOrMissType, weaponDamage, isSynergy, distance)
@@ -99,7 +129,10 @@ local function getNumbersList(category, leftList, rightList)
             if guild == nil or guild == "" and faction == "friendly" then 
                 guild = "FRIENDLY (No Guild)"
                 guildFactions[guild] = "friendly"
-            end 
+            elseif guild == nil or guild == "" and faction == "hostile" then 
+                guild = "HOSTILE (No Guild)"
+                guildFactions[guild] = "hostile"
+            end
 
             if guildCounts[guild] == nil then 
                 guildCounts[guild] = 1
@@ -111,7 +144,7 @@ local function getNumbersList(category, leftList, rightList)
         for _, guild in pairs(sortedGuilds) do 
             local count = guildCounts[guild]
             local listEntry = {}
-            if guild == "FRIENDLY (No Guild)" then 
+            if guild == "FRIENDLY (No Guild)" or guild == "HOSTILE (No Guild)" then 
                 listEntry.text = tostring(count) .. " Guildless"
             else 
                 listEntry.text = tostring(count) .. " <"..guild..">"
@@ -123,7 +156,56 @@ local function getNumbersList(category, leftList, rightList)
                 table.insert(numbersListTable["right"], listEntry)
             end
         end
-    end    
+    elseif currentCategory == 2 then 
+        -- Kills
+        local sortedNames = getKeysSortedByValue(kills, function(a, b) return a > b end)
+        for _, name in pairs(sortedNames) do 
+            local listEntry = {}
+            local faction = factions[name]
+            local killCount = kills[name] or 0
+            factionCounts[faction] = factionCounts[faction] + killCount
+            listEntry.text = name ..": " .. tostring(killCount)
+
+            if faction == "friendly" then 
+                table.insert(numbersListTable["left"], listEntry)
+            else
+                table.insert(numbersListTable["right"], listEntry)
+            end
+        end
+    elseif currentCategory == 3 then 
+        -- Deaths
+        local sortedNames = getKeysSortedByValue(deaths, function(a, b) return a > b end)
+        for _, name in pairs(sortedNames) do 
+            local listEntry = {}
+            local faction = factions[name]
+            local deathCount = deaths[name] or 0
+            factionCounts[faction] = factionCounts[faction] + deathCount
+            listEntry.text = name ..": " .. tostring(deathCount)
+
+            if faction == "friendly" then 
+                table.insert(numbersListTable["left"], listEntry)
+            else
+                table.insert(numbersListTable["right"], listEntry)
+            end
+        end
+    elseif currentCategory == 4 then
+        -- K/D Ratio
+        local sortedNames = getKeysSortedByValue(kdRatios, function(a, b) return a > b end)
+        for _, name in pairs(sortedNames) do 
+            local listEntry = {}
+            local faction = factions[name]
+            local kdRatio = kdRatios[name] or 0
+            -- factionCounts[faction] = factionCounts[faction] + kdRatio
+            factionCounts[faction] = 0
+            listEntry.text = name ..": " .. tostring(kdRatio)
+
+            if faction == "friendly" then 
+                table.insert(numbersListTable["left"], listEntry)
+            else
+                table.insert(numbersListTable["right"], listEntry)
+            end
+        end
+    end 
     numbersListTable["friendly"] = factionCounts["friendly"]
     numbersListTable["hostile"] = factionCounts["hostile"]
     return numbersListTable
@@ -185,8 +267,12 @@ local function OnLoad()
     guilds = {}
     kills = {}
     deaths = {}
+    kdRatios = {}
     factions = {}
     guildFactions = {}
+    lastDamageSource = {}
+
+    fadeNameRate = settings.fadeNameRate or 60000
 
     -- Main Window
 	numbersWindow = api.Interface:CreateEmptyWindow("numbersWindow", "UIParent")
@@ -201,7 +287,7 @@ local function OnLoad()
     moveWnd:SetHeight(35)
     moveWnd.style:SetFontSize(FONT_SIZE.LARGE)
     moveWnd.style:SetAlign(ALIGN.LEFT)
-    moveWnd:SetText("Numbers")
+    moveWnd:SetText("")
     ApplyTextColor(moveWnd, FONT_COLOR.WHITE)
     -- Drag handlers for dragable bar
     function moveWnd:OnDragStart()
@@ -219,6 +305,21 @@ local function OnLoad()
     end
     moveWnd:SetHandler("OnDragStop", moveWnd.OnDragStop)
     moveWnd:EnableDrag(true)
+    -- Main Category Dropdown Menu (Also used as title)
+    local categoryButton = api.Interface:CreateComboBox(moveWnd)
+    categoryButton:AddAnchor("TOPLEFT", moveWnd, -4, 0)
+    categoryButton:SetExtent(120, 30)
+    categoryButton.dropdownItem = categoryStrings
+    categoryButton:Select(1)
+    categoryButton.style:SetFontSize(FONT_SIZE.LARGE)
+    ApplyTextColor(categoryButton, FONT_COLOR.WHITE)
+    categoryButton.bg:SetColor(0,0,0,0)
+    categoryButton:SetHighlightTextColor(1, 1, 1, 1)
+    categoryButton:SetPushedTextColor(1, 1, 1, 1)
+    categoryButton:SetDisabledTextColor(1, 1, 1, 1)
+    categoryButton:SetTextColor(1, 1, 1, 1)
+    categoryButton.button:Show(false) -- Hide dropdown arrow
+    numbersWindow.categoryButton = categoryButton
     -- Background for Title Bar
     moveWnd.bg = moveWnd:CreateNinePartDrawable(TEXTURE_PATH.HUD, "background")
     moveWnd.bg:SetTextureInfo("bg_quest")
@@ -377,6 +478,14 @@ local function OnLoad()
         numbersWindow:Show(true)
     end)
 
+    function numbersWindow.categoryButton:SelectedProc()
+        currentCategory = numbersWindow.categoryButton:GetSelectedIndex()
+        refreshUi()
+        api.Log:Info("[Numbers] Category changed to "..tostring(categoryStrings[currentCategory]))
+    end
+
+
+
     -- Events
     function numbersWindow:OnEvent(event, ...)
         if event == "COMBAT_TEXT" then
@@ -386,10 +495,14 @@ local function OnLoad()
             processCombatMessage(unpack(arg))
             -- updateAbsorbedDmgNumbers()
         end
+        if event == "UNIT_DEAD" then 
+            processUnitDeath(unpack(arg))
+        end 
     end 
     numbersWindow:SetHandler("OnEvent", numbersWindow.OnEvent)
     numbersWindow:RegisterEvent("COMBAT_TEXT")
     numbersWindow:RegisterEvent("COMBAT_MSG")    
+    numbersWindow:RegisterEvent("UNIT_DEAD")
     --
     
     numbersWindow:Show(true)
