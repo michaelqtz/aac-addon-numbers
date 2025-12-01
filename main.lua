@@ -72,7 +72,7 @@ local function processUnitDeath(stringId, lostExpStr, durabilityLossRatio)
     if stringId == nil then return end
     local unitInfo = api.Unit:GetUnitInfoById(stringId)
     if unitInfo.type == "character" then 
-        if lastDamageSource[unitInfo.name] ~= nil and showKillsInChat ~= true then 
+        if lastDamageSource[unitInfo.name] ~= nil and showKillsInChat ~= false then 
             api.Log:Info("[Numbers] "..unitInfo.name.." killed by "..tostring(lastDamageSource[unitInfo.name]))
         end 
         kills[lastDamageSource[unitInfo.name]] = (kills[lastDamageSource[unitInfo.name]] or 0) + 1
