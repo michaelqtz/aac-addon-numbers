@@ -1,9 +1,10 @@
 local api = require("api")
+local michaelClientLib = require("stats_meter/michael_client")
 
 local numbers_addon = {
 	name = "Numbers",
 	author = "Michaelqt",
-	version = "1.0.3",
+	version = "1.0.4",
 	desc = "Numbers diff or skill diff? (It's numbers)"
 }
 
@@ -25,6 +26,7 @@ local categoryStrings = {
 local clockTimer = 2990
 local CLOCK_RESET_TIMER = 3000
 
+local showKillsInChat = true
 
 local isLoaded = false
 
@@ -49,7 +51,7 @@ local function getKeysSortedByValue(tbl, sortFunction)
       return sortFunction(tbl[a], tbl[b])
     end)
     return keys
-  end
+end
 
 local function addUnitToInfoTables(unitInfo) 
     if unitInfo.type ~= "character" then return end -- only log player names
@@ -67,6 +69,7 @@ local function addUnitToInfoTables(unitInfo)
 end 
 
 local function processUnitDeath(stringId, lostExpStr, durabilityLossRatio)
+    if not showKillsInChat then return end
     if stringId == nil then return end
     local unitInfo = api.Unit:GetUnitInfoById(stringId)
     if unitInfo.type == "character" then 
@@ -88,6 +91,8 @@ local function processCombatMessage(targetUnitId, combatEvent, source, target, .
             if factions[source] == "friendly" or factions[source] == "hostile" then 
                 local result = ParseCombatMessage(combatEvent, unpack(arg))
                 lastDamageSource[targetUnitInfo.name] = source
+            else
+                lastDamageSource[targetUnitInfo.name] = "Environment"
             end 
         end 
 
@@ -276,6 +281,9 @@ local function OnLoad()
 
     fadeNameRate = settings.fadeNameRate or 60000
 
+    showKillsInChat = settings.showKillsInChat or true
+    
+    
     -- Main Window
 	numbersWindow = api.Interface:CreateEmptyWindow("numbersWindow", "UIParent")
     numbersWindow:AddAnchor("CENTER", "UIParent", 10, 10)
@@ -485,6 +493,50 @@ local function OnLoad()
         refreshUi()
         -- api.Log:Info("[Numbers] Category changed to "..tostring(categoryStrings[currentCategory]))
     end
+
+    --- Settings Window
+	local settingsWindow = api.Interface:CreateWindow("settingsWindow", "Numbers Settings", 0, 0)
+	settingsWindow:AddAnchor("CENTER", "UIParent", 0, 0)
+	settingsWindow:SetExtent(300, 200)
+    -- Chat Kill Notifications
+    local showKillsInChatButton = settingsWindow:CreateChildWidget("button", "showKillsInChatButton", 0, true)
+    showKillsInChatButton:AddAnchor("TOPLEFT", settingsWindow, 20, 40)
+    showKillsInChatButton:SetText("Show Kills in Chat")
+    ApplyButtonSkin(showKillsInChatButton, BUTTON_BASIC.DEFAULT)
+    function showKillsInChatButton:OnClick()
+        local settings = api.GetSettings("numbers")
+        settings.showKillsInChat = not settings.showKillsInChat
+        if settings.showKillsInChat then 
+            api.Log:Info("[Numbers] Show Kills in Chat: Enabled")
+            showKillsInChatButton:SetText("Show Kills in Chat: ON")
+            showKillsInChat = true
+        else
+            api.Log:Info("[Numbers] Show Kills in Chat: Disabled")
+            showKillsInChatButton:SetText("Show Kills in Chat: OFF")
+            showKillsInChat = false
+        end
+        api.SaveSettings("numbers")
+    end
+    showKillsInChatButton:SetHandler("OnClick", showKillsInChatButton.OnClick)
+
+    function settingsWindow:Init()
+        local settings = api.GetSettings("numbers")
+        if settings.showKillsInChat then 
+            showKillsInChatButton:SetText("Show Kills in Chat: ON")
+            showKillsInChat = true
+        else
+            showKillsInChatButton:SetText("Show Kills in Chat: OFF")
+            showKillsInChat = false
+        end
+    end
+	settingsWindow:Show(false)
+    -- Add it to the michael client
+    michaelClientLib:initializeMichaelClient()
+	local configMenu = ADDON:GetContent(UIC.SYSTEM_CONFIG_FRAME)
+	configMenu.michaelClient:AddAddon("Numbers", function()
+        settingsWindow:Init()
+		settingsWindow:Show(true)
+	end)
 
 
 
