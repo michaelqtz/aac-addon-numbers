@@ -4,7 +4,7 @@ local michaelClientLib = require("stats_meter/michael_client")
 local numbers_addon = {
 	name = "Numbers",
 	author = "Michaelqt",
-	version = "1.0.4",
+	version = "1.0.5",
 	desc = "Numbers diff or skill diff? (It's numbers)"
 }
 
@@ -69,11 +69,10 @@ local function addUnitToInfoTables(unitInfo)
 end 
 
 local function processUnitDeath(stringId, lostExpStr, durabilityLossRatio)
-    if not showKillsInChat then return end
     if stringId == nil then return end
     local unitInfo = api.Unit:GetUnitInfoById(stringId)
     if unitInfo.type == "character" then 
-        if lastDamageSource[unitInfo.name] ~= nil then 
+        if lastDamageSource[unitInfo.name] ~= nil and if showKillsInChat ~= true then 
             api.Log:Info("[Numbers] "..unitInfo.name.." killed by "..tostring(lastDamageSource[unitInfo.name]))
         end 
         kills[lastDamageSource[unitInfo.name]] = (kills[lastDamageSource[unitInfo.name]] or 0) + 1
