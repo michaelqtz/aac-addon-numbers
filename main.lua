@@ -1,10 +1,10 @@
 local api = require("api")
-local michaelClientLib = require("numbers/michael_client")
+local michaelClientLib = require("stats_meter/michael_client")
 
 local numbers_addon = {
 	name = "Numbers",
 	author = "Michaelqt",
-	version = "1.0.5",
+	version = "1.0.6",
 	desc = "Numbers diff or skill diff? (It's numbers)"
 }
 
@@ -166,49 +166,56 @@ local function getNumbersList(category, leftList, rightList)
         -- Kills
         local sortedNames = getKeysSortedByValue(kills, function(a, b) return a > b end)
         for _, name in pairs(sortedNames) do 
-            local listEntry = {}
-            local faction = factions[name]
-            local killCount = kills[name] or 0
-            factionCounts[faction] = factionCounts[faction] + killCount
-            listEntry.text = name ..": " .. tostring(killCount)
+            if name ~= "Environment" then 
+                local listEntry = {}
+                local faction = factions[name]
+                local killCount = kills[name] or 0
+                factionCounts[faction] = factionCounts[faction] + killCount
+                listEntry.text = name ..": " .. tostring(killCount)
 
-            if faction == "friendly" then 
-                table.insert(numbersListTable["left"], listEntry)
-            else
-                table.insert(numbersListTable["right"], listEntry)
+                if faction == "friendly" then 
+                    table.insert(numbersListTable["left"], listEntry)
+                else
+                    table.insert(numbersListTable["right"], listEntry)
+                end
             end
         end
     elseif currentCategory == 3 then 
         -- Deaths
         local sortedNames = getKeysSortedByValue(deaths, function(a, b) return a > b end)
         for _, name in pairs(sortedNames) do 
-            local listEntry = {}
-            local faction = factions[name]
-            local deathCount = deaths[name] or 0
-            factionCounts[faction] = factionCounts[faction] + deathCount
-            listEntry.text = name ..": " .. tostring(deathCount)
+            if name ~= "Environment" then 
+                local listEntry = {}
+                local faction = factions[name]
+                local deathCount = deaths[name] or 0
+                factionCounts[faction] = factionCounts[faction] + deathCount
+                listEntry.text = name ..": " .. tostring(deathCount)
 
-            if faction == "friendly" then 
-                table.insert(numbersListTable["left"], listEntry)
-            else
-                table.insert(numbersListTable["right"], listEntry)
+                if faction == "friendly" then 
+                    table.insert(numbersListTable["left"], listEntry)
+                else
+                    table.insert(numbersListTable["right"], listEntry)
+                end
             end
+            
         end
     elseif currentCategory == 4 then
         -- K/D Ratio
         local sortedNames = getKeysSortedByValue(kdRatios, function(a, b) return a > b end)
         for _, name in pairs(sortedNames) do 
-            local listEntry = {}
-            local faction = factions[name]
-            local kdRatio = kdRatios[name] or 0
-            -- factionCounts[faction] = factionCounts[faction] + kdRatio
-            factionCounts[faction] = 0
-            listEntry.text = name ..": " .. tostring(kdRatio)
+            if name ~= "Environment" then
+                local listEntry = {}
+                local faction = factions[name]
+                local kdRatio = kdRatios[name] or 0
+                -- factionCounts[faction] = factionCounts[faction] + kdRatio
+                factionCounts[faction] = 0
+                listEntry.text = name ..": " .. tostring(kdRatio)
 
-            if faction == "friendly" then 
-                table.insert(numbersListTable["left"], listEntry)
-            else
-                table.insert(numbersListTable["right"], listEntry)
+                if faction == "friendly" then 
+                    table.insert(numbersListTable["left"], listEntry)
+                else
+                    table.insert(numbersListTable["right"], listEntry)
+                end
             end
         end
     end 
@@ -578,4 +585,3 @@ numbers_addon.OnLoad = OnLoad
 numbers_addon.OnUnload = OnUnload
 
 return numbers_addon
-
