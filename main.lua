@@ -1,5 +1,5 @@
 local api = require("api")
-local michaelClientLib = require("stats_meter/michael_client")
+local michaelClientLib = require("numbers/michael_client")
 
 local numbers_addon = {
 	name = "Numbers",
