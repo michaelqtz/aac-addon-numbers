@@ -4,7 +4,7 @@ local michaelClientLib = require("numbers/michael_client")
 local numbers_addon = {
 	name = "Numbers",
 	author = "Michaelqt",
-	version = "1.0.6",
+	version = "1.0.8",
 	desc = "Numbers diff or skill diff? (It's numbers)"
 }
 
@@ -26,7 +26,7 @@ local categoryStrings = {
 local clockTimer = 2990
 local CLOCK_RESET_TIMER = 3000
 
-local showKillsInChat = true
+local showKillsInChat
 
 local isLoaded = false
 
@@ -287,7 +287,7 @@ local function OnLoad()
 
     fadeNameRate = settings.fadeNameRate or 60000
 
-    showKillsInChat = settings.showKillsInChat or true
+    showKillsInChat = settings.showKillsInChat or false
     
     
     -- Main Window
