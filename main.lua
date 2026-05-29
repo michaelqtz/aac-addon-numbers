@@ -28,6 +28,7 @@ local clockTimer = 2990
 local CLOCK_RESET_TIMER = 3000
 
 local showKillsInChat
+local enableExpiration
 
 local isLoaded = false
 
@@ -61,15 +62,17 @@ end
 
 local function pruneExpiredPlayers()
     local now = api.Time:GetUiMsec()
-    for name, lastSeen in pairs(names) do
-        if now - lastSeen > fadeNameRate then
-            names[name] = nil
-            guilds[name] = nil
-            factions[name] = nil
-            kills[name] = nil
-            deaths[name] = nil
-            kdRatios[name] = nil
-            lastDamageSource[name] = nil
+    if enableExpiration ~= false then
+        for name, lastSeen in pairs(names) do
+            if now - lastSeen > fadeNameRate then
+                names[name] = nil
+                guilds[name] = nil
+                factions[name] = nil
+                kills[name] = nil
+                deaths[name] = nil
+                kdRatios[name] = nil
+                lastDamageSource[name] = nil
+            end
         end
     end
 
@@ -326,6 +329,9 @@ local function OnLoad()
     if settings.isMinimized == nil then
         settings.isMinimized = 0
     end
+    if settings.enableExpiration == nil then
+        settings.enableExpiration = true
+    end
     names = {}
     guilds = {}
     kills = {}
@@ -338,6 +344,7 @@ local function OnLoad()
     fadeNameRate = settings.fadeNameRate or 450000
 
     showKillsInChat = settings.showKillsInChat or false
+    enableExpiration = settings.enableExpiration ~= false
     
     
     -- Main Window
@@ -575,6 +582,27 @@ local function OnLoad()
     end
     showKillsInChatButton:SetHandler("OnClick", showKillsInChatButton.OnClick)
 
+    -- Name Expiration Toggle
+    local nameExpirationButton = settingsWindow:CreateChildWidget("button", "nameExpirationButton", 0, true)
+    nameExpirationButton:AddAnchor("TOPLEFT", settingsWindow, 20, 74)
+    nameExpirationButton:SetText("Name Expiration")
+    ApplyButtonSkin(nameExpirationButton, BUTTON_BASIC.DEFAULT)
+    function nameExpirationButton:OnClick()
+        local settings = api.GetSettings("numbers")
+        settings.enableExpiration = not settings.enableExpiration
+        if settings.enableExpiration then
+            api.Log:Info("[Numbers] Name Expiration: Enabled")
+            nameExpirationButton:SetText("Name Expiration: ON")
+            enableExpiration = true
+        else
+            api.Log:Info("[Numbers] Name Expiration: Disabled")
+            nameExpirationButton:SetText("Name Expiration: OFF")
+            enableExpiration = false
+        end
+        api.SaveSettings("numbers")
+    end
+    nameExpirationButton:SetHandler("OnClick", nameExpirationButton.OnClick)
+
     function settingsWindow:Init()
         local settings = api.GetSettings("numbers")
         if settings.showKillsInChat then 
@@ -583,6 +611,14 @@ local function OnLoad()
         else
             showKillsInChatButton:SetText("Show Kills in Chat: OFF")
             showKillsInChat = false
+        end
+
+        if settings.enableExpiration == nil or settings.enableExpiration then
+            nameExpirationButton:SetText("Name Expiration: ON")
+            enableExpiration = true
+        else
+            nameExpirationButton:SetText("Name Expiration: OFF")
+            enableExpiration = false
         end
     end
 	settingsWindow:Show(false)
@@ -624,6 +660,7 @@ local function OnUnload()
     local settings = api.GetSettings("numbers")
     settings.fadeNameRate = fadeNameRate
     settings.showKillsInChat = showKillsInChat
+    settings.enableExpiration = enableExpiration
     settings.isMinimized = minimizedWnd ~= nil and minimizedWnd:IsVisible() and 1 or 0
 
     api.SaveSettings()
